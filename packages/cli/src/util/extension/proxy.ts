@@ -9,7 +9,6 @@ import type { Server } from 'http';
 import type Client from '../client';
 
 const toHeaders = buildToHeaders({
-  // @ts-expect-error - `node-fetch` Headers is missing `getAll()`
   Headers,
 });
 
