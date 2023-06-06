@@ -16,6 +16,30 @@ describe('getConfig()', () => {
     `);
   });
 
+  it('should parse named export config from Node.js file', () => {
+    const project = new Project();
+    const sourcePath = join(__dirname, 'fixtures/node-named-config.js');
+    const config = getConfig(project, sourcePath);
+    expect(config).toMatchInlineSnapshot(`
+      {
+        "maxDuration": 30,
+      }
+    `);
+  });
+
+  it('should prioritize config export over named export from Node.js file', () => {
+    const project = new Project();
+    const sourcePath = join(__dirname, 'fixtures/node-duplicate-config.js');
+    const config = getConfig(project, sourcePath);
+    expect(config).toMatchInlineSnapshot(`
+      {
+        "maxDuration": 60,
+        "memory": 1024,
+        "runtime": "nodejs",
+      }
+    `);
+  });
+
   it('should parse config from Deno file', () => {
     const project = new Project();
     const sourcePath = join(__dirname, 'fixtures/deno.ts');

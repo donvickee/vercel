@@ -37,10 +37,30 @@ export function getConfig<
 >(project: Project, sourcePath: string, schema?: T): FromSchema<T> | null {
   const sourceFile = project.addSourceFileAtPath(sourcePath);
   const configNode = getConfigNode(sourceFile);
-  if (!configNode) return null;
-  const config = getValue(configNode);
+  const namedConfigNodes = getNamedConfigNodes(sourceFile);
+
+  if (!configNode && namedConfigNodes.length === 0) return null;
+
+  const namedConfig = namedConfigNodes.reduce<{ [key: string]: unknown }>(
+    (acc, curr) => ({
+      ...acc,
+      [curr.getName()]: getValue(curr),
+    }),
+    {}
+  );
+
+  const config: object = configNode
+    ? (getValue(configNode) as { [key: string]: unknown })
+    : {};
+
+  // Merge the two configs while giving priority to `config` export
+  const mergedConfig = {
+    ...namedConfig,
+    ...config,
+  };
+
   // @ts-ignore
-  return validate(schema || BaseFunctionConfigSchema, config);
+  return validate(schema || BaseFunctionConfigSchema, mergedConfig);
 }
 
 function getConfigNode(sourceFile: SourceFile) {
@@ -52,6 +72,29 @@ function getConfigNode(sourceFile: SourceFile) {
         SyntaxKind.VariableDeclaration
       );
       if (varDec?.getName() !== 'config') return false;
+
+      // Make sure assigned with `const`
+      const varDecList = varDec.getParentIfKind(
+        SyntaxKind.VariableDeclarationList
+      );
+      const isConst = (varDecList?.getFlags() ?? 0) & NodeFlags.Const;
+      if (!isConst) return false;
+
+      // Make sure it is exported
+      const exp = varDecList?.getParentIfKind(SyntaxKind.VariableStatement);
+      if (!exp?.isExported()) return false;
+
+      return true;
+    });
+}
+
+function getNamedConfigNodes(sourceFile: SourceFile) {
+  const namedExports = ['maxDuration'];
+
+  return sourceFile
+    .getDescendantsOfKind(SyntaxKind.VariableDeclaration)
+    .filter(varDec => {
+      if (!(varDec && namedExports.includes(varDec.getName()))) return false;
 
       // Make sure assigned with `const`
       const varDecList = varDec.getParentIfKind(
@@ -83,6 +126,26 @@ function getValue(valueNode: Node): unknown {
     return getArray(valueNode);
   } else if (Node.isObjectLiteralExpression(valueNode)) {
     return getObject(valueNode);
+  } else if (Node.isVariableDeclaration(valueNode)) {
+    const initializer = valueNode.getInitializer();
+    const initializerKind = initializer?.getKind();
+
+    const validSyntaxKinds = [
+      SyntaxKind.StringLiteral,
+      SyntaxKind.NumericLiteral,
+    ];
+
+    if (
+      !initializer ||
+      !initializerKind ||
+      !validSyntaxKinds.includes(initializerKind)
+    ) {
+      throw new Error(
+        `Unhandled type: "${initializerKind}" ${valueNode.getText()}`
+      );
+    }
+
+    return getValue(initializer);
   } else if (
     Node.isIdentifier(valueNode) &&
     valueNode.getText() === 'undefined'
