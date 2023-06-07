@@ -1,5 +1,7 @@
 ---
-"@vercel/node": patch
+"@vercel/node": minor
+"@vercel/edge": minor
+"vercel": minor
 ---
 
-[node] use `undici.Websocket` when is possible
+[node][edge][cli] use `undici.Websocket` when is possible
