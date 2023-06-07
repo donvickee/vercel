@@ -133,24 +133,24 @@ export function getConfig<T extends JSONSchema>(
   module: Module,
   schema?: T
 ): FromSchema<T> | null {
-  const configData = extractExportedConstValue(module, 'config');
+  const config = extractExportedConstValue(module, 'config');
   const maxDuration = extractExportedConstValue(module, 'maxDuration');
 
   const validConfig =
-    configData && typeof configData === 'object' && !Array.isArray(configData);
+    config && typeof config === 'object' && !Array.isArray(config);
 
   if (!validConfig && !maxDuration) {
     return null;
   }
 
-  const config = {
+  const mergedConfig = {
     maxDuration,
-    ...(configData as Record<string, any>),
+    ...(config as Record<string, any>),
   };
 
   if (schema) {
-    validate(schema, config);
+    validate(schema, mergedConfig);
   }
   // @ts-expect-error - this seems to work just fine, but TS complains it could be infinite nesting
-  return config as FromSchema<T>;
+  return mergedConfig as FromSchema<T>;
 }

@@ -1785,15 +1785,13 @@ export const build: BuildV2 = async ({
           };
           let lambdaOptions: { memory?: number; maxDuration?: number } = {};
 
-          if (config && config.functions) {
-            lambdaOptions = await getLambdaOptionsFromFunction({
-              sourceFile: await getSourceFilePathFromPage({
-                workPath: entryPath,
-                page,
-              }),
-              config,
-            });
-          }
+          lambdaOptions = await getLambdaOptionsFromFunction({
+            sourceFile: await getSourceFilePathFromPage({
+              workPath: entryPath,
+              page,
+            }),
+            config,
+          });
 
           const outputName = normalizeIndexOutput(
             path.join(entryDirectory, pathname),

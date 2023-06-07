@@ -1,3 +1,4 @@
+import { Project } from 'ts-morph';
 import assert from 'assert';
 import Sema from 'async-sema';
 import { ZipFile } from 'yazl';
@@ -6,6 +7,7 @@ import { readlink } from 'fs-extra';
 import { isSymbolicLink, isDirectory } from './fs/download';
 import streamToBuffer from './fs/stream-to-buffer';
 import type { Files, Config, FunctionFramework } from './types';
+import { getConfig } from '@vercel/static-config';
 
 interface Environment {
   [key: string]: string;
@@ -267,5 +269,8 @@ export async function getLambdaOptionsFromFunction({
     }
   }
 
-  return {};
+  const project = new Project();
+  const staticConfig = getConfig(project, sourceFile);
+
+  return staticConfig ? staticConfig : {};
 }
