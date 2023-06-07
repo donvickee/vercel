@@ -63,6 +63,28 @@ describe('getConfig for swc', () => {
     `);
   });
 
+  it('should parse named export config from Node.js file', () => {
+    const ast = parseFixture('fixtures/node-named-config.js');
+    const config = getConfig(ast, BaseFunctionConfigSchema);
+    expect(config).toMatchInlineSnapshot(`
+      {
+        "maxDuration": 30,
+      }
+    `);
+  });
+
+  it('should prioritize config export over named export from Node.js file', () => {
+    const ast = parseFixture('fixtures/node-duplicate-config.js');
+    const config = getConfig(ast, BaseFunctionConfigSchema);
+    expect(config).toMatchInlineSnapshot(`
+      {
+        "maxDuration": 60,
+        "memory": 1024,
+        "runtime": "nodejs",
+      }
+    `);
+  });
+
   it('should parse config from Deno file', () => {
     const ast = parseFixture('fixtures/deno.ts');
     const config = getConfig(ast, {
